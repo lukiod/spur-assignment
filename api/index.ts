@@ -1,9 +1,7 @@
-// Vercel serverless function for API routes
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 
-// Load environment variables (Vercel provides these, but load dotenv for local testing)
 dotenv.config({ path: '../.env' });
 
 import { generateReply } from '../backend/src/gemini';
@@ -11,19 +9,16 @@ import db from '../backend/src/db';
 
 const app = express();
 
-// Middleware
 app.use(cors({
-  origin: true, // Allow all origins in production (Vercel handles this)
+  origin: true,
   credentials: true
 }));
 app.use(express.json({ limit: '1mb' }));
 
-// Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Get conversation history
 app.get('/api/chat/history/:conversationId', async (req, res) => {
   try {
     const conversationId = parseInt(req.params.conversationId, 10);
@@ -40,12 +35,10 @@ app.get('/api/chat/history/:conversationId', async (req, res) => {
   }
 });
 
-// Send message and get AI reply
 app.post('/api/chat/message', async (req, res) => {
   try {
     const { conversationId, message, sender } = req.body;
 
-    // Validate input
     if (!message || typeof message !== 'string' || message.trim().length === 0) {
       return res.status(400).json({ error: 'Message is required' });
     }
@@ -57,19 +50,16 @@ app.post('/api/chat/message', async (req, res) => {
     const trimmedMessage = message.trim();
     let actualConversationId = conversationId;
 
-    // Create new conversation if needed
     if (!actualConversationId || actualConversationId === 0) {
       actualConversationId = await db.createConversation();
     }
 
-    // Save user message
     const userMessageId = await db.saveMessage(
       actualConversationId,
       trimmedMessage,
       sender
     );
 
-    // Generate AI reply if sender is user
     let aiReply = null;
     let aiMessageId = null;
 
@@ -104,7 +94,6 @@ app.post('/api/chat/message', async (req, res) => {
   }
 });
 
-// Get FAQs
 app.get('/api/chat/faqs', async (req, res) => {
   try {
     const faqs = await db.getFAQs();
@@ -115,10 +104,8 @@ app.get('/api/chat/faqs', async (req, res) => {
   }
 });
 
-// Favicon handlers
 app.get('/favicon.ico', (req, res) => res.status(204).end());
 app.get('/favicon.png', (req, res) => res.status(204).end());
 
-// Export as Vercel serverless function
 export default app;
 

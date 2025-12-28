@@ -1,4 +1,3 @@
-// In production (Vercel), use relative paths. In development, use localhost
 const API_BASE_URL = import.meta.env.VITE_API_URL || 
   (import.meta.env.PROD ? '' : 'http://localhost:3001');
 
@@ -27,13 +26,17 @@ class APIClient {
     this.baseURL = baseURL;
   }
 
-  async sendMessage(message: string, sessionId?: string): Promise<ChatResponse> {
+  async sendMessage(message: string, conversationId?: number): Promise<ChatResponse> {
     const response = await fetch(`${this.baseURL}/api/chat/message`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ message, sessionId }),
+      body: JSON.stringify({ 
+        message, 
+        conversationId: conversationId || 0,
+        sender: 'user'
+      }),
     });
 
     if (!response.ok) {
@@ -41,7 +44,12 @@ class APIClient {
       throw new Error(error.error || 'Failed to send message');
     }
 
-    return response.json();
+    const data = await response.json();
+    
+    return {
+      reply: data.aiMessage?.text || '',
+      sessionId: String(data.conversationId),
+    };
   }
 
   async getHistory(sessionId: string): Promise<HistoryResponse> {

@@ -6,7 +6,7 @@
 
   let messages: Message[] = [];
   let inputMessage = '';
-  let sessionId: string | null = null;
+  let conversationId: number | null = null;
   let isLoading = false;
   let error: string | null = null;
   let messagesContainer: HTMLDivElement;
@@ -14,20 +14,20 @@
 
   // Load session from localStorage
   onMount(async () => {
-    const savedSessionId = localStorage.getItem('chatSessionId');
-    if (savedSessionId) {
+    const savedConversationId = localStorage.getItem('chatConversationId');
+    if (savedConversationId) {
       try {
-        const history = await api.getHistory(savedSessionId);
+        const history = await api.getHistory(savedConversationId);
         messages = history.messages.map(msg => ({
           ...msg,
           timestamp: new Date(msg.timestamp)
         }));
-        sessionId = savedSessionId;
+        conversationId = parseInt(savedConversationId);
         scrollToBottom();
       } catch (err) {
         console.error('Failed to load history:', err);
         // Start fresh if history fails to load
-        localStorage.removeItem('chatSessionId');
+        localStorage.removeItem('chatConversationId');
       }
     }
 
@@ -78,11 +78,11 @@
     }
 
     try {
-      const response = await api.sendMessage(trimmed, sessionId || undefined);
+      const response = await api.sendMessage(trimmed, conversationId || undefined);
       
-      // Save session ID
-      sessionId = response.sessionId;
-      localStorage.setItem('chatSessionId', sessionId);
+      // Save conversation ID
+      conversationId = parseInt(response.sessionId);
+      localStorage.setItem('chatConversationId', response.sessionId);
 
       // Add AI response
       const aiMessage: Message = {
@@ -115,8 +115,8 @@
         timestamp: new Date()
       }
     ];
-    sessionId = null;
-    localStorage.removeItem('chatSessionId');
+    conversationId = null;
+    localStorage.removeItem('chatConversationId');
     inputMessage = '';
     error = null;
   }
@@ -468,4 +468,5 @@
     }
   }
 </style>
+
 
